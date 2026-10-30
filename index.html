@@ -151,6 +151,79 @@
       padding: 14px;
       margin-top: 10px;
     }
+
+    /* Pantalla de resultados: texto alineado a la izquierda, no al
+       centro como el resto del sitio -- se lee mejor así cuando hay
+       varias líneas de datos por tarjeta. */
+    #pantalla-resultado {
+      text-align: left;
+    }
+
+    .aviso-publicidad {
+      font-size: 0.8rem;
+      color: #6b6b7d;
+      background-color: #f3f3f7;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+
+    .tarjeta-resultado {
+      border: 2px solid #e2e2ea;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .tarjeta-resultado .nombre-emisor {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #2d6cdf;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .tarjeta-resultado h3 {
+      font-size: 1.15rem;
+      margin: 2px 0 10px;
+    }
+
+    .tarjeta-resultado .datos-clave {
+      display: flex;
+      gap: 18px;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    .tarjeta-resultado .datos-clave div span {
+      display: block;
+      font-size: 0.75rem;
+      color: #8a8a9a;
+    }
+
+    .tarjeta-resultado .por-que {
+      font-size: 0.9rem;
+      background-color: #f7f7fb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 4px;
+    }
+
+    .tarjeta-resultado a {
+      display: block;
+      text-decoration: none;
+    }
+
+    .tarjeta-resultado button {
+      margin-top: 14px;
+    }
+
+    .nota-general {
+      font-size: 0.85rem;
+      color: #8a8a9a;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -176,7 +249,16 @@
          que la lógica de recomendación elige bien. -->
     <section id="pantalla-resultado">
       <h1>Tus mejores opciones</h1>
-      <div id="lista-resultado" style="text-align: left;"></div>
+
+      <!-- Aviso de publicidad: fijo, no depende de las respuestas. Lo
+           mantenemos visible siempre, no solo cuando ya tengamos enlaces
+           de afiliado activos -- así no hay que acordarse de agregarlo
+           después. -->
+      <div class="aviso-publicidad">
+        Aviso: La Mejor Tarjeta puede recibir una compensación de algunos bancos cuando aplicas a través de los enlaces de esta página (actualmente no tenemos acuerdos de afiliado activos, pero los enlaces están preparados para cuando los tengamos). Eso no afecta nuestra selección: el orden de las tarjetas se basa en tus respuestas, no en quién paga más.
+      </div>
+
+      <div id="lista-resultado"></div>
 
       <!-- Solo se muestra cuando la persona dijo que quiere transferir un
            saldo (pregunta 2). Calcula el ahorro con la tarjeta que elija
@@ -457,9 +539,43 @@
         });
     }
 
-    // Por ahora, una lista de texto simple. El diseño real (con estilo
-    // de tarjeta, botón de "Aplicar", aviso de publicidad) es el
-    // siguiente paso.
+    // A dónde manda el botón "Aplicar". Por ahora, directo al sitio del
+    // banco -- todavía no tenemos acuerdos de afiliado (ver el paso de
+    // monetización del proyecto). El día que los tengamos, este es el
+    // ÚNICO lugar que hay que cambiar: en vez de "tarjeta.sitio_web",
+    // regresaría el enlace de seguimiento del afiliado para esa tarjeta.
+    function obtenerEnlaceAplicar(tarjeta) {
+      return tarjeta.sitio_web || "#";
+    }
+
+    // Una frase corta explicando por qué esta tarjeta en particular
+    // responde a lo que la persona pidió -- depende del objetivo.
+    function obtenerExplicacion(tarjeta, respuestas) {
+      if (respuestas.objetivo === "deuda" && respuestas.deuda_actual === "si_transferir") {
+        const comision = tarjeta.cuota_transferencia_pct != null ? tarjeta.cuota_transferencia_pct + "%" : "no publicada";
+        const periodo = tarjeta.periodo_intro_transferencia_meses != null ? tarjeta.periodo_intro_transferencia_meses + " meses" : "periodo no publicado";
+        return "Transferencia de saldo: comisión de " + comision + " · 0% de interés por " + periodo + ".";
+      }
+      if (respuestas.objetivo === "deuda") {
+        return "Tasa de interés más baja que el promedio, para ayudarte a pagar más rápido.";
+      }
+      if (respuestas.objetivo === "viajes") {
+        const fx = tarjeta.cargo_transaccion_extranjera_pct;
+        return fx === 0
+          ? "Sin cargo por transacciones en el extranjero — ideal para viajar."
+          : "Cargo por transacciones en el extranjero: " + fx + "%.";
+      }
+      if (respuestas.objetivo === "cashback") {
+        return tarjeta.tipo_recompensas ? "Recompensas: " + tarjeta.tipo_recompensas + "." : "Tarjeta de recompensas por tus compras diarias.";
+      }
+      if (respuestas.objetivo === "construir_credito") {
+        return tarjeta.tarjeta_segura
+          ? "Tarjeta segura: requiere un depósito, pensada para construir o reparar tu historial de crédito."
+          : "Abierta a crédito limitado o sin historial.";
+      }
+      return "";
+    }
+
     function mostrarResultado(tarjetas) {
       const contenedor = document.getElementById("lista-resultado");
       contenedor.innerHTML = "";
@@ -470,20 +586,29 @@
       }
 
       tarjetas.forEach(function (tarjeta) {
-        const bloque = document.createElement("p");
         const apr = tarjeta.apr_compra.baja != null ? tarjeta.apr_compra.baja + "% - " + tarjeta.apr_compra.alta + "%" : "no publicada";
-        bloque.innerHTML =
-          "<strong>" + tarjeta.emisor + " — " + tarjeta.producto + "</strong><br>" +
-          "Cuota anual: $" + tarjeta.cuota_anual + " · APR: " + apr;
-        contenedor.appendChild(bloque);
+
+        const tarjetaDiv = document.createElement("div");
+        tarjetaDiv.className = "tarjeta-resultado";
+        tarjetaDiv.innerHTML =
+          '<div class="nombre-emisor">' + tarjeta.emisor + "</div>" +
+          "<h3>" + tarjeta.producto + "</h3>" +
+          '<div class="datos-clave">' +
+          "<div>$" + tarjeta.cuota_anual + "<span>Cuota anual</span></div>" +
+          "<div>" + apr + "<span>APR</span></div>" +
+          "</div>" +
+          '<div class="por-que">' + obtenerExplicacion(tarjeta, respuestas) + "</div>" +
+          '<a href="' + obtenerEnlaceAplicar(tarjeta) + '" target="_blank" rel="noopener sponsored">' +
+          '<button type="button">Aplicar en el sitio del banco</button>' +
+          "</a>";
+        contenedor.appendChild(tarjetaDiv);
       });
 
       // Nota general sobre las tarjetas con membresía que excluimos
       // arriba (ver requiereElegibilidadEspecial). No es por tarjeta,
       // es un aviso una sola vez al final de la lista.
       const nota = document.createElement("p");
-      nota.style.fontSize = "0.85rem";
-      nota.style.color = "#8a8a9a";
+      nota.className = "nota-general";
       nota.textContent =
         "Nota: no incluimos tarjetas de cooperativas de crédito u otras instituciones que piden membresía para poder aplicar. Si ya calificas para una (por ejemplo, por tu trabajo o dónde vives), suelen tener tasas más bajas que un banco tradicional — vale la pena compararlas también.";
       contenedor.appendChild(nota);
