@@ -57,6 +57,9 @@
       background-color: #2558b8;
     }
 
+    /* Cada "pantalla" (bienvenida, cada pregunta, resultado) es un <section>.
+       Las escondemos todas por defecto con display:none, y la clase
+       .activa es la única que el JavaScript le pone a la que se debe ver. */
     section {
       display: none;
     }
@@ -78,6 +81,8 @@
       margin-bottom: 20px;
     }
 
+    /* Cada opción de respuesta es un botón grande de ancho completo,
+       apilados con espacio entre ellos — fácil de tocar con el pulgar. */
     .opciones {
       display: flex;
       flex-direction: column;
@@ -94,4 +99,311 @@
       font-weight: 500;
     }
 
-    .opciones
+    .opciones button:active {
+      background-color: #eef3fd;
+      border-color: #2d6cdf;
+    }
+  </style>
+</head>
+<body>
+  <main>
+
+    <!-- Pantalla de bienvenida -->
+    <section id="pantalla-inicio" class="activa">
+      <h1>La Mejor Tarjeta</h1>
+      <p>Responde unas preguntas rápidas y te ayudamos a encontrar la tarjeta de crédito que mejor se ajusta a ti.</p>
+      <button type="button" onclick="empezarEncuesta()">Empezar</button>
+    </section>
+
+    <!-- Pantalla de la encuesta: aquí se dibuja la pregunta actual con JavaScript -->
+    <section id="pantalla-pregunta">
+      <div class="progreso" id="texto-progreso"></div>
+      <h2 id="texto-pregunta"></h2>
+      <div class="opciones" id="contenedor-opciones"></div>
+    </section>
+
+    <!-- Pantalla final. El diseño bonito (tarjetas, botones de "aplicar",
+         aviso de publicidad) lo construimos en el siguiente paso — por
+         ahora solo mostramos una lista simple de texto para comprobar
+         que la lógica de recomendación elige bien. -->
+    <section id="pantalla-resultado">
+      <h1>Tus mejores opciones</h1>
+      <div id="lista-resultado" style="text-align: left;"></div>
+    </section>
+
+  </main>
+
+  <!-- Este archivo define la variable "datosTarjetas" con las 246 tarjetas
+       reales. Tiene que cargarse ANTES del script de abajo, porque el
+       script de abajo usa esa variable. -->
+  <script src="datos-tarjetas.js"></script>
+  <script>
+    // Las 4 preguntas viven en esta lista. Cada pregunta tiene un "id"
+    // (para guardar la respuesta) y una lista de opciones que el usuario
+    // puede tocar. Para agregar o cambiar una pregunta en el futuro,
+    // solo se edita esta lista — el resto del código la dibuja solo.
+    const preguntas = [
+      {
+        id: "objetivo",
+        texto: "¿Cuál es tu objetivo principal con una tarjeta de crédito?",
+        opciones: [
+          { texto: "Pagar o consolidar una deuda que ya tengo", valor: "deuda" },
+          { texto: "Viajar y acumular millas/puntos", valor: "viajes" },
+          { texto: "Ganar cashback en mis compras diarias", valor: "cashback" },
+          { texto: "Construir o mejorar mi historial de crédito", valor: "construir_credito" },
+        ],
+      },
+      {
+        id: "deuda_actual",
+        texto: "¿Tienes actualmente deuda en otra tarjeta de crédito?",
+        opciones: [
+          { texto: "Sí, y quiero transferir el saldo a una tasa más baja", valor: "si_transferir" },
+          { texto: "Sí, pero no estoy buscando transferirla", valor: "si_no_transferir" },
+          { texto: "No tengo deuda en tarjetas", valor: "no" },
+        ],
+      },
+      {
+        id: "gasto_mensual",
+        texto: "Aproximadamente, ¿cuánto gastarías al mes con esta tarjeta?",
+        opciones: [
+          { texto: "Menos de $500", valor: "bajo" },
+          { texto: "Entre $500 y $1,500", valor: "medio" },
+          { texto: "Más de $1,500", valor: "alto" },
+        ],
+      },
+      {
+        id: "perfil_credito",
+        texto: "¿Cómo describirías tu crédito actual?",
+        opciones: [
+          { texto: "Excelente (por encima de 740)", valor: "excelente" },
+          { texto: "Bueno (670 - 739)", valor: "bueno" },
+          { texto: "Regular (580 - 669)", valor: "regular" },
+          { texto: "Apenas lo estoy construyendo / no tengo historial", valor: "construyendo" },
+        ],
+      },
+    ];
+
+    // Aquí se van guardando las respuestas mientras el usuario avanza.
+    // Ejemplo después de responder todo: { objetivo: "viajes", deuda_actual: "no", ... }
+    const respuestas = {};
+    let indiceActual = 0;
+
+    function mostrarPantalla(id) {
+      document.querySelectorAll("main > section").forEach(function (seccion) {
+        seccion.classList.remove("activa");
+      });
+      document.getElementById(id).classList.add("activa");
+    }
+
+    function empezarEncuesta() {
+      indiceActual = 0;
+      mostrarPantalla("pantalla-pregunta");
+      dibujarPregunta();
+    }
+
+    function dibujarPregunta() {
+      const pregunta = preguntas[indiceActual];
+
+      document.getElementById("texto-progreso").textContent =
+        "Pregunta " + (indiceActual + 1) + " de " + preguntas.length;
+      document.getElementById("texto-pregunta").textContent = pregunta.texto;
+
+      const contenedor = document.getElementById("contenedor-opciones");
+      contenedor.innerHTML = ""; // limpia las opciones de la pregunta anterior
+
+      pregunta.opciones.forEach(function (opcion) {
+        const boton = document.createElement("button");
+        boton.type = "button";
+        boton.textContent = opcion.texto;
+        boton.onclick = function () {
+          seleccionarRespuesta(pregunta.id, opcion.valor);
+        };
+        contenedor.appendChild(boton);
+      });
+    }
+
+    function seleccionarRespuesta(idPregunta, valor) {
+      respuestas[idPregunta] = valor;
+
+      if (indiceActual < preguntas.length - 1) {
+        indiceActual = indiceActual + 1;
+        dibujarPregunta();
+      } else {
+        const mejores = obtenerRecomendaciones(respuestas);
+        console.log("Respuestas:", respuestas);
+        console.log("Recomendadas:", mejores);
+        mostrarResultado(mejores);
+        mostrarPantalla("pantalla-resultado");
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // LÓGICA DE RECOMENDACIÓN
+    // Toma las respuestas de la encuesta y la lista completa de tarjetas
+    // (datosTarjetas, definida en datos-tarjetas.js) y regresa las 3
+    // mejores, en orden. Funciona en dos pasos: primero FILTRA las
+    // tarjetas que no aplican para esta persona, y luego PUNTÚA las que
+    // quedan para ordenarlas de mejor a peor.
+    // ------------------------------------------------------------------
+
+    // Paso 1a: ¿el crédito de la persona probablemente califica para
+    // esta tarjeta? El campo "nivel_credito_objetivo" es texto libre del
+    // CFPB (por ejemplo "Credit score of 720 or greater"), así que lo
+    // revisamos buscando pedacitos de texto conocidos. Si una tarjeta no
+    // especifica nada, la dejamos pasar (mejor mostrar de más que de
+    // menos en esta primera versión).
+    function calificaPorCredito(tarjeta, perfilCredito) {
+      const texto = (tarjeta.nivel_credito_objetivo || "").toLowerCase();
+      if (!texto) return true;
+
+      if (tarjeta.tarjeta_segura) return true; // las tarjetas seguras casi siempre aceptan crédito limitado
+
+      if (perfilCredito === "excelente") {
+        return texto.includes("720");
+      }
+      if (perfilCredito === "bueno") {
+        return texto.includes("620 to 719") || texto.includes("720");
+      }
+      if (perfilCredito === "regular") {
+        return texto.includes("619 or less") || texto.includes("620 to 719");
+      }
+      if (perfilCredito === "construyendo") {
+        return texto.includes("no credit score") || texto.includes("619 or less");
+      }
+      return true;
+    }
+
+    // Paso 1b: ¿la tarjeta tiene sentido para el objetivo que eligió?
+    function calificaPorObjetivo(tarjeta, objetivo) {
+      const recompensas = (tarjeta.recompensas || []).join(" ").toLowerCase();
+
+      if (objetivo === "viajes") {
+        return recompensas.includes("travel");
+      }
+      if (objetivo === "cashback") {
+        return recompensas.includes("cashback");
+      }
+      if (objetivo === "construir_credito") {
+        return tarjeta.tarjeta_segura || (tarjeta.nivel_credito_objetivo || "").toLowerCase().includes("no credit score");
+      }
+      if (objetivo === "deuda") {
+        return tarjeta.transferencia_saldo.ofrece || tarjeta.apr_introductoria.ofrece;
+      }
+      return true;
+    }
+
+    // Paso 2: entre las tarjetas que sí califican, les damos una
+    // puntuación. Más alto = mejor. Cada objetivo valora cosas distintas.
+    function puntuarTarjeta(tarjeta, respuestas) {
+      let puntos = 0;
+
+      // A todos nos conviene menos cuota anual y menos tasa de interés.
+      puntos -= tarjeta.cuota_anual * 0.5;
+      puntos -= (tarjeta.apr_compra.mediana || 25);
+
+      if (respuestas.objetivo === "deuda" && respuestas.deuda_actual === "si_transferir") {
+        // Entre más meses sin intereses y más baja la tasa de
+        // transferencia, mejor para alguien que quiere pagar deuda.
+        puntos += (tarjeta.transferencia_saldo.meses || 0) * 3;
+        puntos -= (tarjeta.transferencia_saldo.apr_max || 0);
+      }
+
+      if (respuestas.objetivo === "viajes") {
+        puntos -= tarjeta.cargo_transaccion_extranjera_pct * 5;
+      }
+
+      if (respuestas.objetivo === "cashback" && respuestas.gasto_mensual === "bajo") {
+        // Si gasta poco al mes, una cuota anual alta pesa más en contra.
+        puntos -= tarjeta.cuota_anual * 1.5;
+      }
+
+      return puntos;
+    }
+
+    // Algunas tarjetas del CFPB son "por invitación" o solo para
+    // clientes privados/de banca de inversión — no sirven de nada
+    // recomendárselas a alguien que llega por un anuncio, porque no
+    // puede aplicar directamente. Las descartamos desde el inicio.
+    function disponiblePublicamente(tarjeta) {
+      const nombre = tarjeta.producto.toLowerCase();
+      const palabrasExcluidas = ["invitation", "private bank", "employee"];
+      return !palabrasExcluidas.some(function (palabra) {
+        return nombre.includes(palabra);
+      });
+    }
+
+    // Las cooperativas de crédito (credit unions, como Navy Federal) piden
+    // una membresía para poder aplicar -- normalmente estar en el ejército,
+    // o un familiar que lo esté. No tiene caso recomendárselas a alguien
+    // que no cumple ese requisito, así que las quitamos de la lista.
+    // (Si en el futuro agregamos otra cooperativa, esto la detecta sola
+    // por el nombre, sin tener que tocar este código otra vez.)
+    function requiereMembresiaCooperativa(tarjeta) {
+      return tarjeta.emisor.toLowerCase().includes("credit union");
+    }
+
+    function obtenerRecomendaciones(respuestas) {
+      const candidatas = datosTarjetas.tarjetas.filter(function (tarjeta) {
+        return (
+          disponiblePublicamente(tarjeta) &&
+          !requiereMembresiaCooperativa(tarjeta) &&
+          calificaPorCredito(tarjeta, respuestas.perfil_credito) &&
+          calificaPorObjetivo(tarjeta, respuestas.objetivo)
+        );
+      });
+
+      // Si el filtro quedó demasiado estricto y no encontró nada,
+      // mejor mostrar algo (sin el filtro de objetivo) que una pantalla
+      // vacía.
+      const base = candidatas.length > 0
+        ? candidatas
+        : datosTarjetas.tarjetas.filter(function (t) {
+            return disponiblePublicamente(t) && !requiereMembresiaCooperativa(t) && calificaPorCredito(t, respuestas.perfil_credito);
+          });
+
+      return base
+        .map(function (tarjeta) {
+          return { tarjeta: tarjeta, puntos: puntuarTarjeta(tarjeta, respuestas) };
+        })
+        .sort(function (a, b) {
+          return b.puntos - a.puntos;
+        })
+        .slice(0, 3)
+        .map(function (item) {
+          return item.tarjeta;
+        });
+    }
+
+    // Por ahora, una lista de texto simple. El diseño real (con estilo
+    // de tarjeta, botón de "Aplicar", aviso de publicidad) es el
+    // siguiente paso.
+    function mostrarResultado(tarjetas) {
+      const contenedor = document.getElementById("lista-resultado");
+      contenedor.innerHTML = "";
+
+      if (tarjetas.length === 0) {
+        contenedor.textContent = "No encontramos una tarjeta que coincida todavía.";
+        return;
+      }
+
+      tarjetas.forEach(function (tarjeta) {
+        const bloque = document.createElement("p");
+        bloque.innerHTML =
+          "<strong>" + tarjeta.emisor + " — " + tarjeta.producto + "</strong><br>" +
+          "Cuota anual: $" + tarjeta.cuota_anual + " · APR: " + tarjeta.apr_compra.mediana + "%";
+        contenedor.appendChild(bloque);
+      });
+
+      // Nota general sobre las cooperativas de crédito que excluimos
+      // arriba (ver requiereMembresiaCooperativa). No es por tarjeta,
+      // es un aviso una sola vez al final de la lista.
+      const nota = document.createElement("p");
+      nota.style.fontSize = "0.85rem";
+      nota.style.color = "#8a8a9a";
+      nota.textContent =
+        "Nota: no incluimos cooperativas de crédito (credit unions) en esta lista porque piden una membresía para poder aplicar. Si ya perteneces a una, sus tarjetas suelen tener tasas más bajas que las de un banco tradicional — vale la pena compararlas también.";
+      contenedor.appendChild(nota);
+    }
+  </script>
+</body>
+</html>
