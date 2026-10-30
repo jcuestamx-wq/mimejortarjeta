@@ -103,6 +103,51 @@
       background-color: #eef3fd;
       border-color: #2d6cdf;
     }
+
+    label {
+      display: block;
+      text-align: left;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #4a4a5a;
+      margin-bottom: 6px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      font-size: 1rem;
+      padding: 12px;
+      border: 2px solid #e2e2ea;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      box-sizing: border-box;
+      /* 44px+ de alto para que sea fácil de tocar en el celular */
+      min-height: 44px;
+    }
+
+    #bloque-calculadora {
+      display: none; /* el JavaScript la muestra solo cuando aplica */
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e2ea;
+      text-align: left;
+    }
+
+    .resultado-ahorro {
+      background-color: #eef9f0;
+      border: 1px solid #bfe6c6;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 10px;
+    }
+
+    .resultado-aviso {
+      background-color: #fff6e9;
+      border: 1px solid #f0d9a8;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -129,6 +174,27 @@
     <section id="pantalla-resultado">
       <h1>Tus mejores opciones</h1>
       <div id="lista-resultado" style="text-align: left;"></div>
+
+      <!-- Solo se muestra cuando la persona dijo que quiere transferir un
+           saldo (pregunta 2). Calcula el ahorro usando la primera tarjeta
+           recomendada arriba. -->
+      <div id="bloque-calculadora">
+        <h2>Calculadora de ahorro</h2>
+        <p>Con tu situación actual, calculemos cuánto te ahorrarías transfiriendo tu saldo a <strong id="calc-nombre-tarjeta"></strong>:</p>
+
+        <label for="calc-saldo">Saldo actual que debes ($)</label>
+        <input type="number" id="calc-saldo" inputmode="decimal" value="4000">
+
+        <label for="calc-apr">Tasa de interés (APR) de tu tarjeta actual (%)</label>
+        <input type="number" id="calc-apr" inputmode="decimal" value="24.99">
+
+        <label for="calc-pago">Pago mensual que puedes hacer ($)</label>
+        <input type="number" id="calc-pago" inputmode="decimal" value="300">
+
+        <button type="button" onclick="calcularYMostrarAhorro()">Calcular mi ahorro</button>
+
+        <div id="resultado-calculadora"></div>
+      </div>
     </section>
 
   </main>
@@ -142,6 +208,10 @@
     // (para guardar la respuesta) y una lista de opciones que el usuario
     // puede tocar. Para agregar o cambiar una pregunta en el futuro,
     // solo se edita esta lista — el resto del código la dibuja solo.
+    //
+    // Los valores de "perfil_credito" están escritos para calzar
+    // exactamente con las 3 categorías de nivel de crédito que trae el
+    // archivo de datos (ver calificaPorCredito más abajo).
     const preguntas = [
       {
         id: "objetivo",
@@ -175,10 +245,10 @@
         id: "perfil_credito",
         texto: "¿Cómo describirías tu crédito actual?",
         opciones: [
-          { texto: "Excelente (por encima de 740)", valor: "excelente" },
-          { texto: "Bueno (670 - 739)", valor: "bueno" },
-          { texto: "Regular (580 - 669)", valor: "regular" },
-          { texto: "Apenas lo estoy construyendo / no tengo historial", valor: "construyendo" },
+          { texto: "Excelente (aprox. 720 o más)", valor: "excelente" },
+          { texto: "Buena (aprox. 620 - 719)", valor: "buena" },
+          { texto: "La estoy construyendo / es limitada", valor: "construyendo" },
+          { texto: "No tengo historial de crédito todavía", valor: "sin_historial" },
         ],
       },
     ];
@@ -243,51 +313,43 @@
     // (datosTarjetas, definida en datos-tarjetas.js) y regresa las 3
     // mejores, en orden. Funciona en dos pasos: primero FILTRA las
     // tarjetas que no aplican para esta persona, y luego PUNTÚA las que
-    // quedan para ordenarlas de mejor a peor.
+        // quedan para ordenarlas de mejor a peor.
     // ------------------------------------------------------------------
 
     // Paso 1a: ¿el crédito de la persona probablemente califica para
-    // esta tarjeta? El campo "nivel_credito_objetivo" es texto libre del
-    // CFPB (por ejemplo "Credit score of 720 or greater"), así que lo
-    // revisamos buscando pedacitos de texto conocidos. Si una tarjeta no
-    // especifica nada, la dejamos pasar (mejor mostrar de más que de
-    // menos en esta primera versión).
+    // esta tarjeta? El dataset trae solo 3 categorías de nivel mínimo:
+    // "All tiers" (abierta a cualquiera), "Good and up (~620+)" y
+    // "Excellent (~720+)". Comparamos contra eso.
     function calificaPorCredito(tarjeta, perfilCredito) {
-      const texto = (tarjeta.nivel_credito_objetivo || "").toLowerCase();
-      if (!texto) return true;
+      const nivel = tarjeta.nivel_credito_minimo_texto || "";
 
-      if (tarjeta.tarjeta_segura) return true; // las tarjetas seguras casi siempre aceptan crédito limitado
+      if (nivel.includes("All tiers")) return true;
+      if (nivel.includes("Good and up")) return perfilCredito === "buena" || perfilCredito === "excelente";
+      if (nivel.includes("Excellent")) return perfilCredito === "excelente";
 
-      if (perfilCredito === "excelente") {
-        return texto.includes("720");
-      }
-      if (perfilCredito === "bueno") {
-        return texto.includes("620 to 719") || texto.includes("720");
-      }
-      if (perfilCredito === "regular") {
-        return texto.includes("619 or less") || texto.includes("620 to 719");
-      }
-      if (perfilCredito === "construyendo") {
-        return texto.includes("no credit score") || texto.includes("619 or less");
-      }
-      return true;
+      return true; // sin dato: mejor no descartarla
     }
 
     // Paso 1b: ¿la tarjeta tiene sentido para el objetivo que eligió?
-    function calificaPorObjetivo(tarjeta, objetivo) {
-      const recompensas = (tarjeta.recompensas || []).join(" ").toLowerCase();
+    // Usa las "etiquetas_situacion" que ya vienen asignadas en los datos
+    // (debt-payoff, balance-transfer, travel, everyday-cashback, etc.)
+    function calificaPorObjetivo(tarjeta, respuestas) {
+      const tags = tarjeta.etiquetas_situacion || [];
 
-      if (objetivo === "viajes") {
-        return recompensas.includes("travel");
+      if (respuestas.objetivo === "viajes") {
+        return tags.includes("travel");
       }
-      if (objetivo === "cashback") {
-        return recompensas.includes("cashback");
+      if (respuestas.objetivo === "cashback") {
+        return tags.includes("everyday-cashback");
       }
-      if (objetivo === "construir_credito") {
-        return tarjeta.tarjeta_segura || (tarjeta.nivel_credito_objetivo || "").toLowerCase().includes("no credit score");
+      if (respuestas.objetivo === "construir_credito") {
+        return tarjeta.tarjeta_segura || (tarjeta.nivel_credito_minimo_texto || "").includes("All tiers");
       }
-      if (objetivo === "deuda") {
-        return tarjeta.transferencia_saldo.ofrece || tarjeta.apr_introductoria.ofrece;
+      if (respuestas.objetivo === "deuda") {
+        if (respuestas.deuda_actual === "si_transferir") {
+          return tags.includes("balance-transfer");
+        }
+        return tags.includes("debt-payoff");
       }
       return true;
     }
@@ -297,15 +359,20 @@
     function puntuarTarjeta(tarjeta, respuestas) {
       let puntos = 0;
 
-      // A todos nos conviene menos cuota anual y menos tasa de interés.
+      // A todos nos conviene menos cuota anual y menos tasa de interés
+      // (usamos el punto medio entre la tasa baja y alta como estimado).
+      const aprTipica =
+        tarjeta.apr_compra.baja != null && tarjeta.apr_compra.alta != null
+          ? (tarjeta.apr_compra.baja + tarjeta.apr_compra.alta) / 2
+          : 25;
       puntos -= tarjeta.cuota_anual * 0.5;
-      puntos -= (tarjeta.apr_compra.mediana || 25);
+      puntos -= aprTipica;
 
       if (respuestas.objetivo === "deuda" && respuestas.deuda_actual === "si_transferir") {
-        // Entre más meses sin intereses y más baja la tasa de
+        // Entre más meses sin intereses y más baja la comisión de
         // transferencia, mejor para alguien que quiere pagar deuda.
-        puntos += (tarjeta.transferencia_saldo.meses || 0) * 3;
-        puntos -= (tarjeta.transferencia_saldo.apr_max || 0);
+        puntos += (tarjeta.periodo_intro_transferencia_meses || 0) * 3;
+        puntos -= (tarjeta.cuota_transferencia_pct || 0) * 10;
       }
 
       if (respuestas.objetivo === "viajes") {
@@ -320,10 +387,11 @@
       return puntos;
     }
 
-    // Algunas tarjetas del CFPB son "por invitación" o solo para
-    // clientes privados/de banca de inversión — no sirven de nada
-    // recomendárselas a alguien que llega por un anuncio, porque no
-    // puede aplicar directamente. Las descartamos desde el inicio.
+    // Algunas tarjetas son "por invitación" o solo para empleados/banca
+    // privada -- no sirven de nada recomendárselas a alguien que llega
+    // por un anuncio, porque no puede aplicar directamente. El dataset
+    // no siempre las marca con la bandera de elegibilidad especial, así
+    // que además revisamos el nombre.
     function disponiblePublicamente(tarjeta) {
       const nombre = tarjeta.producto.toLowerCase();
       const palabrasExcluidas = ["invitation", "private bank", "employee"];
@@ -332,23 +400,32 @@
       });
     }
 
-    // Las cooperativas de crédito (credit unions, como Navy Federal) piden
-    // una membresía para poder aplicar -- normalmente estar en el ejército,
-    // o un familiar que lo esté. No tiene caso recomendárselas a alguien
-    // que no cumple ese requisito, así que las quitamos de la lista.
-    // (Si en el futuro agregamos otra cooperativa, esto la detecta sola
-    // por el nombre, sin tener que tocar este código otra vez.)
-    function requiereMembresiaCooperativa(tarjeta) {
-      return tarjeta.emisor.toLowerCase().includes("credit union");
+    // El dataset marca con "requiere_elegibilidad_especial" cualquier
+    // tarjeta que pida membresía (afiliación profesional, vivir en
+    // cierta región, etc.), pero esa bandera no quedó bien marcada en
+    // todas las cooperativas de crédito (51 de 229 no la tienen puesta
+    // -- es un hueco conocido de los datos, no un error nuestro). Por
+    // eso, además de la bandera, revisamos si el nombre del emisor dice
+    // "credit union" directamente.
+    function requiereElegibilidadEspecial(tarjeta) {
+      const emisor = tarjeta.emisor.toLowerCase();
+      return (
+        tarjeta.requiere_elegibilidad_especial === true ||
+        emisor.includes("credit union") ||
+        /\bf?cu\b/.test(emisor) // atrapa abreviaciones como "... Cu" o "... FCU"
+      );
+    }
+
+    function tarjetaDisponibleParaTodos(tarjeta) {
+      return disponiblePublicamente(tarjeta) && !requiereElegibilidadEspecial(tarjeta);
     }
 
     function obtenerRecomendaciones(respuestas) {
       const candidatas = datosTarjetas.tarjetas.filter(function (tarjeta) {
         return (
-          disponiblePublicamente(tarjeta) &&
-          !requiereMembresiaCooperativa(tarjeta) &&
+          tarjetaDisponibleParaTodos(tarjeta) &&
           calificaPorCredito(tarjeta, respuestas.perfil_credito) &&
-          calificaPorObjetivo(tarjeta, respuestas.objetivo)
+          calificaPorObjetivo(tarjeta, respuestas)
         );
       });
 
@@ -358,7 +435,7 @@
       const base = candidatas.length > 0
         ? candidatas
         : datosTarjetas.tarjetas.filter(function (t) {
-            return disponiblePublicamente(t) && !requiereMembresiaCooperativa(t) && calificaPorCredito(t, respuestas.perfil_credito);
+            return tarjetaDisponibleParaTodos(t) && calificaPorCredito(t, respuestas.perfil_credito);
           });
 
       return base
@@ -388,21 +465,162 @@
 
       tarjetas.forEach(function (tarjeta) {
         const bloque = document.createElement("p");
+        const apr = tarjeta.apr_compra.baja != null ? tarjeta.apr_compra.baja + "% - " + tarjeta.apr_compra.alta + "%" : "no publicada";
         bloque.innerHTML =
           "<strong>" + tarjeta.emisor + " — " + tarjeta.producto + "</strong><br>" +
-          "Cuota anual: $" + tarjeta.cuota_anual + " · APR: " + tarjeta.apr_compra.mediana + "%";
+          "Cuota anual: $" + tarjeta.cuota_anual + " · APR: " + apr;
         contenedor.appendChild(bloque);
       });
 
-      // Nota general sobre las cooperativas de crédito que excluimos
-      // arriba (ver requiereMembresiaCooperativa). No es por tarjeta,
+      // Nota general sobre las tarjetas con membresía que excluimos
+      // arriba (ver requiereElegibilidadEspecial). No es por tarjeta,
       // es un aviso una sola vez al final de la lista.
       const nota = document.createElement("p");
       nota.style.fontSize = "0.85rem";
       nota.style.color = "#8a8a9a";
       nota.textContent =
-        "Nota: no incluimos cooperativas de crédito (credit unions) en esta lista porque piden una membresía para poder aplicar. Si ya perteneces a una, sus tarjetas suelen tener tasas más bajas que las de un banco tradicional — vale la pena compararlas también.";
+        "Nota: no incluimos tarjetas de cooperativas de crédito u otras instituciones que piden membresía para poder aplicar. Si ya calificas para una (por ejemplo, por tu trabajo o dónde vives), suelen tener tasas más bajas que un banco tradicional — vale la pena compararlas también.";
       contenedor.appendChild(nota);
+
+      // La calculadora de ahorro solo tiene sentido cuando la persona
+      // dijo que quiere transferir un saldo Y encontramos al menos una
+      // tarjeta con oferta real de transferencia.
+      const tarjetaParaTransferir = tarjetas.find(function (t) {
+        return (t.etiquetas_situacion || []).includes("balance-transfer") && t.cuota_transferencia_pct != null;
+      });
+
+      const bloqueCalculadora = document.getElementById("bloque-calculadora");
+      if (respuestas.objetivo === "deuda" && respuestas.deuda_actual === "si_transferir" && tarjetaParaTransferir) {
+        bloqueCalculadora.style.display = "block";
+        bloqueCalculadora.dataset.tarjetaId = tarjetaParaTransferir.id;
+        document.getElementById("calc-nombre-tarjeta").textContent =
+          tarjetaParaTransferir.emisor + " — " + tarjetaParaTransferir.producto;
+        document.getElementById("resultado-calculadora").innerHTML = "";
+      } else {
+        bloqueCalculadora.style.display = "none";
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // CALCULADORA DE AHORRO POR TRANSFERENCIA DE SALDO
+    // Misma matemática que la pestaña "Balance Transfer Calculator" de
+    // la hoja de cálculo original: compara seguir pagando la tarjeta
+    // actual contra transferir el saldo a la tarjeta recomendada,
+    // asumiendo un pago mensual fijo en ambos casos.
+    //
+    // Importante (igual que en la hoja de cálculo): esta versión solo
+    // calcula bien el caso en que el saldo se termina de pagar DENTRO
+    // del periodo de 0% de interés. Si no alcanza a pagarse a tiempo,
+    // el cálculo de "qué pasa después" queda pendiente para más
+    // adelante -- aquí simplemente se avisa que no alcanza.
+    // ------------------------------------------------------------------
+
+    // ¿Cuántos meses toma pagar "saldo" hoy, pagando "pagoMensual" cada
+    // mes, con una tasa anual de "aprAnual" (como fracción, 0.2499 = 24.99%)?
+    // Es la fórmula estándar de amortización de un préstamo.
+    function mesesParaPagar(saldo, aprAnual, pagoMensual) {
+      if (saldo <= 0) return 0;
+      if (aprAnual === 0) return saldo / pagoMensual;
+
+      const tasaMensual = aprAnual / 12;
+      const numerador = saldo * tasaMensual;
+
+      if (numerador >= pagoMensual) return null; // el pago ni siquiera cubre el interés del mes
+
+      return -Math.log(1 - numerador / pagoMensual) / Math.log(1 + tasaMensual);
+    }
+
+    function calcularAhorroTransferencia(saldoActual, aprActualPct, pagoMensual, tarjetaNueva) {
+      const aprActual = aprActualPct / 100;
+      const mesesActual = mesesParaPagar(saldoActual, aprActual, pagoMensual);
+      if (mesesActual === null) {
+        return { error: "Con ese pago mensual, nunca terminarías de pagar esta deuda (ni siquiera cubre el interés). Prueba con un pago más alto." };
+      }
+      const totalPagadoActual = pagoMensual * mesesActual;
+
+      const comisionPct = (tarjetaNueva.cuota_transferencia_pct || 0) / 100;
+      const comisionMinima = tarjetaNueva.cuota_transferencia_minima || 0;
+      const comisionTransferencia = Math.max(saldoActual * comisionPct, comisionMinima);
+
+      const nuevoSaldo = saldoActual + comisionTransferencia;
+      const aprIntro = (tarjetaNueva.apr_intro_transferencia || 0) / 100;
+      const mesesNuevo = mesesParaPagar(nuevoSaldo, aprIntro, pagoMensual);
+
+      if (mesesNuevo === null) {
+        return { error: "Con ese pago mensual, tampoco alcanzarías a pagar la nueva tarjeta. Prueba con un pago más alto." };
+      }
+
+      const periodoIntro = tarjetaNueva.periodo_intro_transferencia_meses;
+      const cabeEnPeriodoIntro = periodoIntro != null && mesesNuevo <= periodoIntro;
+
+      if (!cabeEnPeriodoIntro) {
+        return {
+          cabe: false,
+          mesesActual: mesesActual,
+          mesesNecesarios: mesesNuevo,
+          periodoIntro: periodoIntro,
+        };
+      }
+
+      const totalPagadoNuevo = pagoMensual * mesesNuevo;
+
+      return {
+        cabe: true,
+        mesesActual: mesesActual,
+        totalPagadoActual: totalPagadoActual,
+        comisionTransferencia: comisionTransferencia,
+        mesesNuevo: mesesNuevo,
+        totalPagadoNuevo: totalPagadoNuevo,
+        ahorro: totalPagadoActual - totalPagadoNuevo,
+      };
+    }
+
+    function formatearDinero(numero) {
+      return "$" + numero.toLocaleString("es-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    function calcularYMostrarAhorro() {
+      const saldo = parseFloat(document.getElementById("calc-saldo").value);
+      const apr = parseFloat(document.getElementById("calc-apr").value);
+      const pago = parseFloat(document.getElementById("calc-pago").value);
+      const contenedor = document.getElementById("resultado-calculadora");
+
+      if (isNaN(saldo) || isNaN(apr) || isNaN(pago) || saldo <= 0 || pago <= 0) {
+        contenedor.innerHTML = '<div class="resultado-aviso">Revisa que los 3 campos tengan números válidos.</div>';
+        return;
+      }
+
+      const tarjetaId = document.getElementById("bloque-calculadora").dataset.tarjetaId;
+      const tarjetaNueva = datosTarjetas.tarjetas.find(function (t) {
+        return t.id === tarjetaId;
+      });
+
+      const resultado = calcularAhorroTransferencia(saldo, apr, pago, tarjetaNueva);
+
+      if (resultado.error) {
+        contenedor.innerHTML = '<div class="resultado-aviso">' + resultado.error + "</div>";
+        return;
+      }
+
+      if (!resultado.cabe) {
+        contenedor.innerHTML =
+          '<div class="resultado-aviso">Con ese pago mensual tardarías ' +
+          Math.ceil(resultado.mesesNecesarios) +
+          " meses en pagar el saldo transferido, pero el periodo sin intereses dura solo " +
+          resultado.periodoIntro +
+          " meses. Para que te convenga, necesitarías pagar más al mes.</div>";
+        return;
+      }
+
+      contenedor.innerHTML =
+        '<div class="resultado-ahorro">' +
+        "<strong>Te ahorrarías aproximadamente " + formatearDinero(resultado.ahorro) + "</strong><br><br>" +
+        "Quedándote en tu tarjeta actual: pagarías " + formatearDinero(resultado.totalPagadoActual) +
+        " en total, a lo largo de " + Math.ceil(resultado.mesesActual) + " meses.<br><br>" +
+        "Transfiriendo el saldo: pagarías " + formatearDinero(resultado.comisionTransferencia) +
+        " de comisión, y terminarías de pagar en " + Math.ceil(resultado.mesesNuevo) +
+        " meses, por un total de " + formatearDinero(resultado.totalPagadoNuevo) + "." +
+        "</div>";
     }
   </script>
 </body>
