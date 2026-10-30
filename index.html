@@ -5,15 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>La Mejor Tarjeta</title>
   <style>
+    /* ------------------------------------------------------------------
+       PALETA DE COLORES
+       Todo el sitio usa estas variables en vez de colores sueltos, para
+       que cambiar el tema (o ajustar un tono) sea editar una sola vez
+       aquí arriba, no buscar por todo el archivo.
+       ------------------------------------------------------------------ */
+    :root {
+      --color-bg: #fbf6ee;
+      --color-surface: #ffffff;
+      --color-text: #2b2118;
+      --color-text-muted: #8a7560;
+      --color-primary: #c1440e;
+      --color-primary-dark: #9c3607;
+      --color-secondary: #c98a2c;
+      --color-secondary-light: #f3e3c3;
+      --color-border: #eadfcf;
+      --color-success-bg: #eaf2ea;
+      --color-success-border: #b9d4bc;
+      --color-success-text: #2f5233;
+      --color-warn-bg: #fbf0dd;
+      --color-warn-border: #e7c98a;
+      --color-warn-text: #6b4a14;
+    }
+
     * {
       box-sizing: border-box;
     }
 
     body {
       margin: 0;
+      /* Fuente del sistema operativo -- carga instantánea, sin esperar
+         una tipografía externa. Importante en un sitio que se va a
+         abrir sobre todo desde el celular, desde un anuncio. */
       font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif;
-      background-color: #f7f7fb;
-      color: #1a1a2e;
+      background-color: var(--color-bg);
+      color: var(--color-text);
       display: flex;
       justify-content: center;
       padding: 24px 16px;
@@ -22,31 +49,55 @@
     main {
       width: 100%;
       max-width: 480px;
-      background: #ffffff;
+      background: var(--color-surface);
       border-radius: 16px;
-      padding: 32px 24px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      padding: 28px 24px 32px;
+      box-shadow: 0 2px 16px rgba(43, 33, 24, 0.08);
       text-align: center;
+    }
+
+    /* Encabezado de marca -- siempre visible, en todas las pantallas. */
+    .marca {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .marca svg {
+      flex-shrink: 0;
+    }
+
+    .marca span {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      letter-spacing: -0.01em;
     }
 
     h1 {
       font-size: 1.6rem;
       margin-bottom: 8px;
+      color: var(--color-text);
     }
 
     p {
       font-size: 1rem;
       line-height: 1.5;
-      color: #4a4a5a;
+      color: var(--color-text-muted);
     }
 
     button {
       margin-top: 20px;
       font-size: 1.05rem;
+      font-weight: 600;
       padding: 14px 28px;
       border: none;
       border-radius: 10px;
-      background-color: #2d6cdf;
+      background-color: var(--color-primary);
       color: white;
       min-height: 48px;
       width: 100%;
@@ -54,7 +105,7 @@
     }
 
     button:active {
-      background-color: #2558b8;
+      background-color: var(--color-primary-dark);
     }
 
     /* Cada "pantalla" (bienvenida, cada pregunta, resultado) es un <section>.
@@ -70,15 +121,19 @@
 
     .progreso {
       font-size: 0.85rem;
-      color: #8a8a9a;
+      font-weight: 600;
+      color: var(--color-secondary);
       margin-bottom: 12px;
       text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
     h2 {
       font-size: 1.3rem;
       text-align: left;
       margin-bottom: 20px;
+      color: var(--color-text);
     }
 
     /* Cada opción de respuesta es un botón grande de ancho completo,
@@ -91,17 +146,17 @@
 
     .opciones button {
       margin-top: 0;
-      background-color: #ffffff;
-      color: #1a1a2e;
-      border: 2px solid #e2e2ea;
+      background-color: var(--color-surface);
+      color: var(--color-text);
+      border: 2px solid var(--color-border);
       text-align: left;
       font-size: 1rem;
       font-weight: 500;
     }
 
     .opciones button:active {
-      background-color: #eef3fd;
-      border-color: #2d6cdf;
+      background-color: var(--color-secondary-light);
+      border-color: var(--color-secondary);
     }
 
     label {
@@ -109,7 +164,7 @@
       text-align: left;
       font-size: 0.9rem;
       font-weight: 500;
-      color: #4a4a5a;
+      color: var(--color-text-muted);
       margin-bottom: 6px;
     }
 
@@ -118,12 +173,12 @@
       width: 100%;
       font-size: 1rem;
       padding: 12px;
-      border: 2px solid #e2e2ea;
+      border: 2px solid var(--color-border);
       border-radius: 10px;
       margin-bottom: 14px;
       box-sizing: border-box;
-      background-color: #ffffff;
-      color: #1a1a2e;
+      background-color: var(--color-surface);
+      color: var(--color-text);
       /* 44px+ de alto para que sea fácil de tocar en el celular */
       min-height: 44px;
     }
@@ -132,21 +187,23 @@
       display: none; /* el JavaScript la muestra solo cuando aplica */
       margin-top: 28px;
       padding-top: 20px;
-      border-top: 1px solid #e2e2ea;
+      border-top: 1px solid var(--color-border);
       text-align: left;
     }
 
     .resultado-ahorro {
-      background-color: #eef9f0;
-      border: 1px solid #bfe6c6;
+      background-color: var(--color-success-bg);
+      border: 1px solid var(--color-success-border);
+      color: var(--color-success-text);
       border-radius: 10px;
       padding: 14px;
       margin-top: 10px;
     }
 
     .resultado-aviso {
-      background-color: #fff6e9;
-      border: 1px solid #f0d9a8;
+      background-color: var(--color-warn-bg);
+      border: 1px solid var(--color-warn-border);
+      color: var(--color-warn-text);
       border-radius: 10px;
       padding: 14px;
       margin-top: 10px;
@@ -161,8 +218,9 @@
 
     .aviso-publicidad {
       font-size: 0.8rem;
-      color: #6b6b7d;
-      background-color: #f3f3f7;
+      color: var(--color-text-muted);
+      background-color: var(--color-bg);
+      border: 1px solid var(--color-border);
       border-radius: 10px;
       padding: 12px 14px;
       margin-bottom: 20px;
@@ -170,16 +228,38 @@
     }
 
     .tarjeta-resultado {
-      border: 2px solid #e2e2ea;
+      border: 2px solid var(--color-border);
       border-radius: 14px;
       padding: 18px;
       margin-bottom: 16px;
     }
 
+    /* La tarjeta #1 se distingue un poco -- borde del color de marca,
+       para que quede claro que es la mejor opción, no una más de 3. */
+    .tarjeta-resultado:first-of-type {
+      border-color: var(--color-primary);
+      position: relative;
+    }
+
+    .tarjeta-resultado:first-of-type::before {
+      content: "Mejor opción para ti";
+      position: absolute;
+      top: -11px;
+      left: 14px;
+      background-color: var(--color-primary);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
     .tarjeta-resultado .nombre-emisor {
       font-size: 0.8rem;
       font-weight: 600;
-      color: #2d6cdf;
+      color: var(--color-secondary);
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
@@ -187,24 +267,28 @@
     .tarjeta-resultado h3 {
       font-size: 1.15rem;
       margin: 2px 0 10px;
+      color: var(--color-text);
     }
 
     .tarjeta-resultado .datos-clave {
       display: flex;
       gap: 18px;
       font-size: 0.9rem;
+      font-weight: 600;
       margin-bottom: 10px;
     }
 
     .tarjeta-resultado .datos-clave div span {
       display: block;
       font-size: 0.75rem;
-      color: #8a8a9a;
+      font-weight: 400;
+      color: var(--color-text-muted);
     }
 
     .tarjeta-resultado .por-que {
       font-size: 0.9rem;
-      background-color: #f7f7fb;
+      color: var(--color-text);
+      background-color: var(--color-bg);
       border-radius: 8px;
       padding: 10px 12px;
       margin-bottom: 4px;
@@ -219,9 +303,21 @@
       margin-top: 14px;
     }
 
+    /* Las tarjetas recomendadas #2 y #3 usan un botón secundario (con
+       borde, sin relleno) para que el ojo vaya primero al de la #1. */
+    .tarjeta-resultado:not(:first-of-type) button {
+      background-color: var(--color-surface);
+      color: var(--color-primary);
+      border: 2px solid var(--color-primary);
+    }
+
+    .tarjeta-resultado:not(:first-of-type) button:active {
+      background-color: var(--color-secondary-light);
+    }
+
     .nota-general {
       font-size: 0.85rem;
-      color: #8a8a9a;
+      color: var(--color-text-muted);
       margin-top: 4px;
     }
   </style>
@@ -229,9 +325,20 @@
 <body>
   <main>
 
+    <!-- Encabezado de marca: el mismo ícono + nombre en las 3 pantallas,
+         para que se sienta como un solo sitio, no 3 páginas sueltas. -->
+    <div class="marca">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="1.5" y="4.5" width="21" height="15" rx="2.5" fill="var(--color-primary)" />
+        <rect x="1.5" y="8" width="21" height="3" fill="var(--color-secondary)" />
+        <rect x="4" y="14" width="7" height="2" rx="1" fill="white" opacity="0.85" />
+      </svg>
+      <span>La Mejor Tarjeta</span>
+    </div>
+
     <!-- Pantalla de bienvenida -->
     <section id="pantalla-inicio" class="activa">
-      <h1>La Mejor Tarjeta</h1>
+      <h1>Encuentra tu tarjeta ideal</h1>
       <p>Responde unas preguntas rápidas y te ayudamos a encontrar la tarjeta de crédito que mejor se ajusta a ti.</p>
       <button type="button" onclick="empezarEncuesta()">Empezar</button>
     </section>
