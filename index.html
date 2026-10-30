@@ -113,7 +113,8 @@
       margin-bottom: 6px;
     }
 
-    input[type="number"] {
+    input[type="number"],
+    select {
       width: 100%;
       font-size: 1rem;
       padding: 12px;
@@ -121,6 +122,8 @@
       border-radius: 10px;
       margin-bottom: 14px;
       box-sizing: border-box;
+      background-color: #ffffff;
+      color: #1a1a2e;
       /* 44px+ de alto para que sea fácil de tocar en el celular */
       min-height: 44px;
     }
@@ -176,11 +179,14 @@
       <div id="lista-resultado" style="text-align: left;"></div>
 
       <!-- Solo se muestra cuando la persona dijo que quiere transferir un
-           saldo (pregunta 2). Calcula el ahorro usando la primera tarjeta
-           recomendada arriba. -->
+           saldo (pregunta 2). Calcula el ahorro con la tarjeta que elija
+           de las recomendadas arriba. -->
       <div id="bloque-calculadora">
         <h2>Calculadora de ahorro</h2>
-        <p>Con tu situación actual, calculemos cuánto te ahorrarías transfiriendo tu saldo a <strong id="calc-nombre-tarjeta"></strong>:</p>
+        <p>Calculemos cuánto te ahorrarías transfiriendo tu saldo:</p>
+
+        <label for="calc-selector-tarjeta">¿Con cuál de las tarjetas de arriba quieres calcular?</label>
+        <select id="calc-selector-tarjeta" onchange="calcularYMostrarAhorro()"></select>
 
         <label for="calc-saldo">Saldo actual que debes ($)</label>
         <input type="number" id="calc-saldo" inputmode="decimal" value="4000">
@@ -483,19 +489,28 @@
       contenedor.appendChild(nota);
 
       // La calculadora de ahorro solo tiene sentido cuando la persona
-      // dijo que quiere transferir un saldo Y encontramos al menos una
-      // tarjeta con oferta real de transferencia.
-      const tarjetaParaTransferir = tarjetas.find(function (t) {
-        return (t.etiquetas_situacion || []).includes("balance-transfer") && t.cuota_transferencia_pct != null;
+      // dijo que quiere transferir un saldo. Dejamos que elija con
+      // cuál de las tarjetas recomendadas arriba quiere calcular.
+      const tarjetasParaTransferir = tarjetas.filter(function (t) {
+        return (t.etiquetas_situacion || []).includes("balance-transfer");
       });
 
       const bloqueCalculadora = document.getElementById("bloque-calculadora");
-      if (respuestas.objetivo === "deuda" && respuestas.deuda_actual === "si_transferir" && tarjetaParaTransferir) {
+      const selector = document.getElementById("calc-selector-tarjeta");
+
+      if (respuestas.objetivo === "deuda" && respuestas.deuda_actual === "si_transferir" && tarjetasParaTransferir.length > 0) {
         bloqueCalculadora.style.display = "block";
-        bloqueCalculadora.dataset.tarjetaId = tarjetaParaTransferir.id;
-        document.getElementById("calc-nombre-tarjeta").textContent =
-          tarjetaParaTransferir.emisor + " — " + tarjetaParaTransferir.producto;
+
+        selector.innerHTML = "";
+        tarjetasParaTransferir.forEach(function (tarjeta) {
+          const opcion = document.createElement("option");
+          opcion.value = tarjeta.id;
+          opcion.textContent = tarjeta.emisor + " — " + tarjeta.producto;
+          selector.appendChild(opcion);
+        });
+
         document.getElementById("resultado-calculadora").innerHTML = "";
+        calcularYMostrarAhorro();
       } else {
         bloqueCalculadora.style.display = "none";
       }
@@ -551,7 +566,12 @@
       }
 
       const periodoIntro = tarjetaNueva.periodo_intro_transferencia_meses;
-      const cabeEnPeriodoIntro = periodoIntro != null && mesesNuevo <= periodoIntro;
+
+      if (periodoIntro == null) {
+        return { error: "Esta tarjeta no tiene publicado cuánto dura su periodo sin intereses, así que no podemos calcular tu ahorro con los datos disponibles. Prueba con otra de la lista." };
+      }
+
+      const cabeEnPeriodoIntro = mesesNuevo <= periodoIntro;
 
       if (!cabeEnPeriodoIntro) {
         return {
@@ -569,6 +589,7 @@
         mesesActual: mesesActual,
         totalPagadoActual: totalPagadoActual,
         comisionTransferencia: comisionTransferencia,
+        comisionEstimada: tarjetaNueva.cuota_transferencia_pct == null,
         mesesNuevo: mesesNuevo,
         totalPagadoNuevo: totalPagadoNuevo,
         ahorro: totalPagadoActual - totalPagadoNuevo,
@@ -590,7 +611,7 @@
         return;
       }
 
-      const tarjetaId = document.getElementById("bloque-calculadora").dataset.tarjetaId;
+      const tarjetaId = document.getElementById("calc-selector-tarjeta").value;
       const tarjetaNueva = datosTarjetas.tarjetas.find(function (t) {
         return t.id === tarjetaId;
       });
@@ -612,13 +633,17 @@
         return;
       }
 
+      const avisoComision = resultado.comisionEstimada
+        ? " (esta tarjeta no publica su comisión de transferencia, así que asumimos $0 — tu ahorro real probablemente sea un poco menor)"
+        : "";
+
       contenedor.innerHTML =
         '<div class="resultado-ahorro">' +
         "<strong>Te ahorrarías aproximadamente " + formatearDinero(resultado.ahorro) + "</strong><br><br>" +
         "Quedándote en tu tarjeta actual: pagarías " + formatearDinero(resultado.totalPagadoActual) +
         " en total, a lo largo de " + Math.ceil(resultado.mesesActual) + " meses.<br><br>" +
         "Transfiriendo el saldo: pagarías " + formatearDinero(resultado.comisionTransferencia) +
-        " de comisión, y terminarías de pagar en " + Math.ceil(resultado.mesesNuevo) +
+        " de comisión" + avisoComision + ", y terminarías de pagar en " + Math.ceil(resultado.mesesNuevo) +
         " meses, por un total de " + formatearDinero(resultado.totalPagadoNuevo) + "." +
         "</div>";
     }
