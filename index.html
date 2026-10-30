@@ -2,12 +2,9 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <!-- This line is what makes the page behave correctly on phones instead of
-       shrinking down like a tiny desktop page. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Mejor Tarjeta</title>
+  <title>La Mejor Tarjeta</title>
   <style>
-    /* Reset a couple of browser defaults so sizing is predictable */
     * {
       box-sizing: border-box;
     }
@@ -17,7 +14,6 @@
       font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif;
       background-color: #f7f7fb;
       color: #1a1a2e;
-      /* Centers our single content box on the page */
       display: flex;
       justify-content: center;
       padding: 24px 16px;
@@ -25,7 +21,7 @@
 
     main {
       width: 100%;
-      max-width: 480px; /* keeps lines readable on wide screens, full-width on phones */
+      max-width: 480px;
       background: #ffffff;
       border-radius: 16px;
       padding: 32px 24px;
@@ -52,7 +48,6 @@
       border-radius: 10px;
       background-color: #2d6cdf;
       color: white;
-      /* Big enough to tap comfortably with a thumb */
       min-height: 48px;
       width: 100%;
       cursor: pointer;
@@ -61,13 +56,42 @@
     button:active {
       background-color: #2558b8;
     }
-  </style>
-</head>
-<body>
-  <main>
-    <h1>Mi Mejor Tarjeta</h1>
-    <p>Responde unas preguntas rápidas y te ayudamos a encontrar la tarjeta de crédito que mejor se ajusta a ti.</p>
-    <button type="button">Empezar</button>
-  </main>
-</body>
-</html>
+
+    section {
+      display: none;
+    }
+
+    section.activa {
+      display: block;
+    }
+
+    .progreso {
+      font-size: 0.85rem;
+      color: #8a8a9a;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      text-align: left;
+      margin-bottom: 20px;
+    }
+
+    .opciones {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .opciones button {
+      margin-top: 0;
+      background-color: #ffffff;
+      color: #1a1a2e;
+      border: 2px solid #e2e2ea;
+      text-align: left;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .opciones
