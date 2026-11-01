@@ -121,6 +121,29 @@
       color: var(--color-primary-dark);
     }
 
+    /* Botón secundario: mismo tamaño/forma que el botón principal, pero
+       con borde en vez de relleno, para que "Empezar" siga siendo la
+       acción principal y "Aprende" se vea como una opción secundaria. */
+    .boton-secundario {
+      display: block;
+      margin-top: 12px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      padding: 12px 28px;
+      border: 2px solid var(--color-primary);
+      border-radius: 10px;
+      background-color: var(--color-surface);
+      color: var(--color-primary);
+      min-height: 48px;
+      width: 100%;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .boton-secundario:active {
+      background-color: var(--color-secondary-light);
+    }
+
     /* Cada "pantalla" (bienvenida, cada pregunta, resultado) es un <section>.
        Las escondemos todas por defecto con display:none, y la clase
        .activa es la única que el JavaScript le pone a la que se debe ver. */
@@ -354,7 +377,8 @@
       <h1>Encuentra tu tarjeta ideal</h1>
       <p>Responde unas preguntas rápidas y te ayudamos a encontrar la tarjeta de crédito que mejor se ajusta a ti.</p>
       <button type="button" onclick="empezarEncuesta()">Empezar</button>
-      <a href="aprende.html" class="enlace-aprende">📘 ¿No sabes por dónde empezar? Aprende a leer tu tarjeta</a>
+      <a href="aprende.html" class="boton-secundario">Aprende</a>
+      <a href="https://lamejortarjeta.com/aprende.html" class="enlace-aprende">¿No sabes por dónde empezar? Aprende a leer tu tarjeta</a>
     </section>
 
     <!-- Pantalla de la encuesta: aquí se dibuja la pregunta actual con JavaScript -->
