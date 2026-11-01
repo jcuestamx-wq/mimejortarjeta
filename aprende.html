@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aprende — La Mejor Tarjeta</title>
+  <style>
+    /* Mismas variables de color que index.html, para que se sienta
+       como el mismo sitio. Si cambias el tema allá, cámbialo aquí
+       también (o lo movemos a un archivo .css compartido más adelante). */
+    :root {
+      --color-bg: #fbf6ee;
+      --color-surface: #ffffff;
+      --color-text: #2b2118;
+      --color-text-muted: #8a7560;
+      --color-primary: #c1440e;
+      --color-primary-dark: #9c3607;
+      --color-secondary: #c98a2c;
+      --color-secondary-light: #f3e3c3;
+      --color-border: #eadfcf;
+      --color-success-bg: #eaf2ea;
+      --color-success-border: #b9d4bc;
+      --color-success-text: #2f5233;
+      --color-warn-bg: #fbf0dd;
+      --color-warn-border: #e7c98a;
+      --color-warn-text: #6b4a14;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif;
+      background-color: var(--color-bg);
+      color: var(--color-text);
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px 48px;
+    }
+
+    main {
+      width: 100%;
+      max-width: 640px;
+    }
+
+    .marca {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .marca svg { flex-shrink: 0; }
+
+    .marca span {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .volver {
+      display: inline-block;
+      margin-bottom: 16px;
+      color: var(--color-primary);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .volver:active { color: var(--color-primary-dark); }
+
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 8px;
+      color: var(--color-text);
+    }
+
+    .intro {
+      font-size: 1rem;
+      line-height: 1.55;
+      color: var(--color-text-muted);
+      margin-bottom: 24px;
+    }
+
+    /* Cada tema es un <details> -- se abre/cierra sin necesitar JavaScript,
+       y en el celular ocupa poco espacio hasta que lo tocas. */
+    details {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 6px rgba(43, 33, 24, 0.05);
+      overflow: hidden;
+    }
+
+    summary {
+      padding: 16px 18px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::after {
+      content: "+";
+      font-size: 1.3rem;
+      font-weight: 400;
+      color: var(--color-primary);
+      flex-shrink: 0;
+    }
+
+    details[open] summary::after { content: "−"; }
+
+    details[open] summary {
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .contenido-tema {
+      padding: 4px 18px 20px;
+      font-size: 0.97rem;
+      line-height: 1.6;
+    }
+
+    .contenido-tema p { margin: 0 0 12px; }
+    .contenido-tema ul { margin: 0 0 12px; padding-left: 20px; }
+    .contenido-tema li { margin-bottom: 6px; }
+
+    .destacado {
+      background: var(--color-secondary-light);
+      border-left: 3px solid var(--color-secondary);
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 0.93rem;
+      margin: 12px 0;
+    }
+
+    .ejemplo {
+      background: var(--color-success-bg);
+      border: 1px solid var(--color-success-border);
+      color: var(--color-success-text);
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 0.93rem;
+      margin: 12px 0;
+    }
+
+    .alerta {
+      background: var(--color-warn-bg);
+      border: 1px solid var(--color-warn-border);
+      color: var(--color-warn-text);
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 0.93rem;
+      margin: 12px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 12px 0;
+    }
+
+    th, td {
+      text-align: right;
+      padding: 7px 6px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    th:first-child, td:first-child { text-align: left; }
+
+    th {
+      color: var(--color-text-muted);
+      font-weight: 600;
+      font-size: 0.82rem;
+    }
+
+    .glosario dt {
+      font-weight: 700;
+      margin-top: 12px;
+    }
+
+    .glosario dd {
+      margin: 2px 0 0;
+      color: var(--color-text-muted);
+    }
+
+    .cta-final {
+      background: var(--color-surface);
+      border-radius: 16px;
+      padding: 24px 20px;
+      text-align: center;
+      margin-top: 28px;
+      box-shadow: 0 2px 16px rgba(43, 33, 24, 0.08);
+    }
+
+    .cta-final p {
+      color: var(--color-text-muted);
+      margin-bottom: 14px;
+    }
+
+    .boton-cta {
+      display: inline-block;
+      font-size: 1.05rem;
+      font-weight: 600;
+      padding: 14px 28px;
+      border: none;
+      border-radius: 10px;
+      background-color: var(--color-primary);
+      color: white;
+      text-decoration: none;
+    }
+
+    .nota-legal {
+      font-size: 0.82rem;
+      color: var(--color-text-muted);
+      text-align: center;
+      margin-top: 24px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="marca">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="1.5" y="4.5" width="21" height="15" rx="2.5" fill="var(--color-primary)" />
+        <rect x="1.5" y="8" width="21" height="3" fill="var(--color-secondary)" />
+        <rect x="4" y="14" width="7" height="2" rx="1" fill="white" opacity="0.85" />
+      </svg>
+      <span>La Mejor Tarjeta</span>
+    </div>
+
+    <a href="index.html" class="volver">← Volver al inicio</a>
+
+    <h1>Aprende a leer tu tarjeta de crédito</h1>
+    <p class="intro">
+      Antes de elegir una tarjeta nueva, vale la pena entender bien la que ya
+      tienes. Aquí explicamos, en español sencillo, los términos que más
+      confusión causan: cómo se calcula el interés de verdad, qué significa
+      cada línea de tu estado de cuenta, y por qué pagar solo el "pago
+      mínimo" te puede costar miles de dólares de más.
+    </p>
+
+    <!-- TEMA 1: APR y capitalización diaria vs mensual -->
+    <details>
+      <summary>¿Qué es el APR, y por qué "diario" vs "mensual" importa?</summary>
+      <div class="contenido-tema">
+        <p>
+          El <strong>APR</strong> (Annual Percentage Rate, o Tasa Anual
+          Porcentual) es el costo de tu deuda expresado como un porcentaje
+          anual. El problema es que ese número por sí solo no te dice
+          <em>con qué frecuencia</em> el banco te cobra intereses sobre
+          intereses — y casi todas las tarjetas de crédito en EE.UU.
+          capitalizan el interés <strong>todos los días</strong>, no una
+          vez al mes.
+        </p>
+        <p>
+          Así funciona en la práctica: el banco toma tu APR y lo divide
+          entre 365 para obtener una "tasa diaria". Cada día, te cobra esa
+          tasa sobre tu saldo pendiente — y ese interés de ayer se suma al
+          saldo de hoy, así que mañana pagas interés sobre el interés de
+          ayer también. Esto se llama <strong>interés compuesto diario</strong>.
+        </p>
+        <div class="destacado">
+          Resultado: el APR que ves en tu tarjeta ("APR nominal") casi
+          siempre es más bajo que lo que realmente termina costándote en
+          un año completo ("tasa efectiva anual").
+        </div>
+        <p>Así se ve la diferencia con tasas típicas del mercado:</p>
+        <table>
+          <thead>
+            <tr><th>APR nominal</th><th>Tasa efectiva anual real</th><th>Diferencia</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>15.99%</td><td>17.34%</td><td>+1.35 pts</td></tr>
+            <tr><td>18.99%</td><td>20.91%</td><td>+1.92 pts</td></tr>
+            <tr><td>21.99%</td><td>24.59%</td><td>+2.60 pts</td></tr>
+            <tr><td>24.99%</td><td>28.38%</td><td>+3.39 pts</td></tr>
+            <tr><td>27.99%</td><td>32.29%</td><td>+4.30 pts</td></tr>
+            <tr><td>29.99%</td><td>34.96%</td><td>+4.97 pts</td></tr>
+          </tbody>
+        </table>
+        <p>
+          Mientras más alto es el APR nominal, más grande es la brecha —
+          porque la capitalización diaria se "alimenta" de un saldo que
+          crece más rápido.
+        </p>
+        <div class="alerta">
+          Nota: la calculadora de ahorro de este sitio usa una aproximación
+          mensual estándar (la misma que usan la mayoría de calculadoras de
+          préstamos) para mantener los números simples de seguir. El costo
+          real con capitalización diaria es un poco más alto que la
+          estimación — otra razón más para pagar más del mínimo cuando
+          puedas.
+        </div>
+      </div>
+    </details>
+
+    <!-- TEMA 2: Cómo leer tu estado de cuenta -->
+    <details>
+      <summary>Cómo leer tu estado de cuenta, línea por línea</summary>
+      <div class="contenido-tema">
+        <p>Tu estado de cuenta (statement) mensual casi siempre tiene estas partes:</p>
+        <ul>
+          <li><strong>Saldo anterior:</strong> lo que debías al cerrar el mes pasado.</li>
+          <li><strong>Pagos y créditos:</strong> lo que pagaste o te devolvieron desde entonces.</li>
+          <li><strong>Compras nuevas:</strong> todo lo que cargaste este ciclo.</li>
+          <li><strong>Cargos por interés:</strong> lo que el banco te cobró por no haber pagado el saldo completo.</li>
+          <li><strong>Nuevo saldo (new balance / statement balance):</strong> lo que debes al día de hoy, según este corte.</li>
+          <li><strong>Pago mínimo:</strong> lo menos que puedes pagar sin que te reporten como atrasado — pero ver el siguiente tema sobre por qué esto es una trampa.</li>
+          <li><strong>Fecha de corte (closing date):</strong> el día en que se "congela" el estado de cuenta. Todo lo que cargues después cuenta para el próximo ciclo.</li>
+          <li><strong>Fecha límite de pago (due date):</strong> normalmente 21-25 días después de la fecha de corte. Pagar después de esta fecha casi siempre genera un cargo por atraso.</li>
+        </ul>
+        <div class="destacado">
+          <strong>Periodo de gracia:</strong> si pagas el "nuevo saldo" completo antes de la fecha límite, generalmente no pagas ningún interés sobre tus compras de ese ciclo. Ese es el único momento en que usar una tarjeta de crédito es verdaderamente "gratis". En cuanto pagas menos del saldo completo, pierdes ese periodo de gracia y el interés empieza a correr desde el día de cada compra.
+        </div>
+        <p>
+          Muchas tarjetas también muestran un APR distinto para compras,
+          para transferencias de saldo, y para adelantos de efectivo (cash
+          advance) — este último casi siempre es el más caro y sin periodo
+          de gracia, así que evita sacar efectivo con tu tarjeta de crédito
+          si puedes.
+        </p>
+      </div>
+    </details>
+
+    <!-- TEMA 3: La trampa del pago mínimo -->
+    <details>
+      <summary>La trampa del pago mínimo</summary>
+      <div class="contenido-tema">
+        <p>
+          El pago mínimo está diseñado para ser lo más bajo posible que la
+          ley permite — no para ayudarte a salir de la deuda rápido. Pagar
+          solo el mínimo puede alargar una deuda por años y multiplicar lo
+          que terminas pagando en intereses.
+        </p>
+        <p>Ejemplo real: una deuda de $5,000 con un APR de 24.99%.</p>
+        <table>
+          <thead>
+            <tr><th>Pago mensual</th><th>Tiempo para pagarla</th><th>Interés total pagado</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>$125/mes</td><td>86.8 meses (7.2 años)</td><td>$5,854</td></tr>
+            <tr><td>$200/mes</td><td>35.7 meses (3.0 años)</td><td>$2,135</td></tr>
+            <tr><td>$300/mes</td><td>20.7 meses (1.7 años)</td><td>$1,205</td></tr>
+          </tbody>
+        </table>
+        <div class="ejemplo">
+          Con el pago más bajo ($125/mes, un monto típico de "pago mínimo"
+          en este saldo), terminas pagando <strong>$5,854 en intereses</strong>
+          — casi el mismo monto que pediste prestado — y te toma más de 7
+          años liquidar la deuda.
+        </div>
+        <p>
+          La diferencia entre pagar $125 y pagar $300 al mes no es solo
+          "pagarla más rápido" — son más de <strong>$4,600 dólares</strong>
+          que te quedas en el bolsillo. Usa la calculadora de ahorro en la
+          página de resultados para ver tu propio caso con tus números
+          reales.
+        </p>
+      </div>
+    </details>
+
+    <!-- TEMA 4: Utilización de crédito -->
+    <details>
+      <summary>Utilización de crédito: por qué importa aunque pagues a tiempo</summary>
+      <div class="contenido-tema">
+        <p>
+          La <strong>utilización de crédito</strong> es qué porcentaje de tu
+          límite total estás usando en un momento dado. Si tu límite es
+          $10,000 y debes $3,000, tu utilización es 30%.
+        </p>
+        <ul>
+          <li>Es uno de los factores más importantes en tu puntaje de crédito (score) — después del historial de pagos.</li>
+          <li>La regla general que usan muchos asesores: mantenerla por debajo del <strong>30%</strong>, e idealmente debajo del 10% si buscas el mejor puntaje posible.</li>
+          <li>Esto aplica aunque pagues tu tarjeta completa cada mes — el banco reporta el saldo del día de corte, no si pagaste a tiempo.</li>
+          <li>Tener más tarjetas (con más límite total disponible) puede ayudar a bajar tu utilización, <em>siempre y cuando</em> no gastes más solo porque tienes más límite disponible.</li>
+        </ul>
+        <div class="destacado">
+          Truco simple: si sabes que tu saldo va a salir alto en la fecha de
+          corte, puedes hacer un pago parcial unos días antes de esa fecha,
+          para que el banco reporte un saldo más bajo — sin tener que pagar
+          la tarjeta completa antes de tiempo.
+        </div>
+      </div>
+    </details>
+
+    <!-- GLOSARIO -->
+    <details>
+      <summary>Glosario rápido</summary>
+      <div class="contenido-tema">
+        <dl class="glosario">
+          <dt>APR (Annual Percentage Rate)</dt>
+          <dd>La tasa de interés anual nominal de tu tarjeta.</dd>
+
+          <dt>APR variable</dt>
+          <dd>Un APR que sube o baja junto con la "tasa prime" del mercado (la tasa de referencia que los bancos usan en EE.UU.). La mayoría de tarjetas de crédito tienen APR variable.</dd>
+
+          <dt>Saldo (balance)</dt>
+          <dd>Lo que debes en un momento dado.</dd>
+
+          <dt>Periodo de gracia (grace period)</dt>
+          <dd>Los días entre la fecha de corte y la fecha límite de pago durante los cuales no se cobra interés sobre compras nuevas, siempre que hayas pagado el saldo anterior completo.</dd>
+
+          <dt>Transferencia de saldo (balance transfer)</dt>
+          <dd>Mover una deuda de una tarjeta a otra, generalmente para aprovechar un APR introductorio más bajo (o 0%) por un tiempo limitado. Casi siempre tiene una comisión de transferencia (3-5% del monto transferido).</dd>
+
+          <dt>Utilización de crédito</dt>
+          <dd>Tu saldo dividido entre tu límite de crédito, expresado en porcentaje.</dd>
+
+          <dt>Cargo por transacción en el extranjero</dt>
+          <dd>Un porcentaje extra (normalmente 1-3%) que algunas tarjetas cobran en compras hechas fuera de EE.UU. o en otra moneda. Muchas tarjetas de viaje no cobran esto.</dd>
+
+          <dt>Puntaje de crédito (credit score)</dt>
+          <dd>Un número (normalmente 300-850 en el modelo FICO) que resume qué tan "riesgoso" eres para prestarte dinero, basado en tu historial de pagos, utilización, antigüedad de tus cuentas, y más.</dd>
+        </dl>
+      </div>
+    </details>
+
+    <div class="cta-final">
+      <p>¿Listo para ver qué tarjeta se ajusta mejor a tu situación?</p>
+      <a href="index.html" class="boton-cta">Hacer la encuesta</a>
+    </div>
+
+    <p class="nota-legal">
+      Esta página es solo para fines educativos y no constituye asesoría
+      financiera, legal ni de inversión. Los ejemplos usan números
+      ilustrativos; tu tarjeta y tu situación pueden variar. Para asesoría
+      sobre tu caso particular, consulta a un asesor financiero certificado.
+    </p>
+  </main>
+</body>
+</html>
