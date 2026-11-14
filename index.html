@@ -263,6 +263,22 @@
       line-height: 1.4;
     }
 
+    /* Mismo estilo visual que .aviso-publicidad (misma caja/tono), pero
+       es un aviso distinto: este es sobre que las condiciones de las
+       tarjetas pueden cambiar, no sobre compensación por afiliados. Los
+       dejamos como cajas separadas en vez de fusionarlos en una sola,
+       para que cada aviso se pueda leer como una idea independiente. */
+    .aviso-actualizacion {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      background-color: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+
     .tarjeta-resultado {
       border: 2px solid var(--color-border);
       border-radius: 14px;
@@ -356,6 +372,16 @@
       color: var(--color-text-muted);
       margin-top: 4px;
     }
+
+    /* Va debajo del botón "Aplicar" de cada tarjeta -- por eso vive
+       dentro de .tarjeta-resultado, no junto a .nota-general (que es un
+       solo aviso al final de toda la lista). */
+    .tarjeta-resultado .nota-verificar {
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      margin-top: 8px;
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
@@ -401,6 +427,10 @@
            después. -->
       <div class="aviso-publicidad">
         Aviso: La Mejor Tarjeta puede recibir una compensación de algunos bancos cuando aplicas a través de los enlaces de esta página (actualmente no tenemos acuerdos de afiliado activos, pero los enlaces están preparados para cuando los tengamos). Eso no afecta nuestra selección: el orden de las tarjetas se basa en tus respuestas, no en quién paga más.
+      </div>
+
+      <div class="aviso-actualizacion">
+        Los bancos pueden cambiar en cualquier momento las tasas, cuotas y condiciones de sus tarjetas, incluso sin previo aviso. Actualizamos esta información periódicamente, pero no podemos garantizar que sea la más reciente en todo momento — confirma siempre los detalles exactos directamente en el sitio del banco antes de aplicar.
       </div>
 
       <div id="lista-resultado"></div>
@@ -723,6 +753,16 @@
       return "";
     }
 
+    // Unos pocos emisores en los datos vienen guardados como "State Bank
+    // And Trust Company, The" (así alfabetiza Excel los nombres con
+    // "The") en vez de "The State Bank And Trust Company". Se nota poco
+    // como etiqueta suelta, pero se ve mal dentro de una oración -- esta
+    // función lo arregla antes de mostrarlo.
+    function formatearEmisor(emisor) {
+      const match = emisor.match(/^(.+),\s*The$/i);
+      return match ? "The " + match[1] : emisor;
+    }
+
     function mostrarResultado(tarjetas) {
       const contenedor = document.getElementById("lista-resultado");
       contenedor.innerHTML = "";
@@ -734,11 +774,12 @@
 
       tarjetas.forEach(function (tarjeta) {
         const apr = tarjeta.apr_compra.baja != null ? tarjeta.apr_compra.baja + "% - " + tarjeta.apr_compra.alta + "%" : "no publicada";
+        const emisor = formatearEmisor(tarjeta.emisor);
 
         const tarjetaDiv = document.createElement("div");
         tarjetaDiv.className = "tarjeta-resultado";
         tarjetaDiv.innerHTML =
-          '<div class="nombre-emisor">' + tarjeta.emisor + "</div>" +
+          '<div class="nombre-emisor">' + emisor + "</div>" +
           "<h3>" + tarjeta.producto + "</h3>" +
           '<div class="datos-clave">' +
           "<div>$" + tarjeta.cuota_anual + "<span>Cuota anual</span></div>" +
@@ -747,7 +788,8 @@
           '<div class="por-que">' + obtenerExplicacion(tarjeta, respuestas) + "</div>" +
           '<a href="' + obtenerEnlaceAplicar(tarjeta) + '" target="_blank" rel="noopener sponsored">' +
           '<button type="button">Aplicar en el sitio del banco</button>' +
-          "</a>";
+          "</a>" +
+          '<p class="nota-verificar">Al hacer clic, busca «' + tarjeta.producto + '» en el sitio de ' + emisor + ' para confirmar que ves la oferta correcta.</p>';
         contenedor.appendChild(tarjetaDiv);
       });
 
@@ -777,7 +819,7 @@
         tarjetasParaTransferir.forEach(function (tarjeta) {
           const opcion = document.createElement("option");
           opcion.value = tarjeta.id;
-          opcion.textContent = tarjeta.emisor + " — " + tarjeta.producto;
+          opcion.textContent = formatearEmisor(tarjeta.emisor) + " — " + tarjeta.producto;
           selector.appendChild(opcion);
         });
 
